@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Input, Modal } from 'antd';
 import { getName, searchTMDB } from './tmdb';
 import { SearchResultTypes, SearchTypes } from './tmdbTypes';

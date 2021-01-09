@@ -9,7 +9,8 @@ import {
   TheDetails,
   TVCast,
 } from './tmdbTypes';
-import { UserDeleteOutlined } from '@ant-design/icons';
+import { UserDeleteOutlined, UserOutlined } from '@ant-design/icons';
+import { AvatarProps } from 'antd/lib/avatar';
 
 type AgeProps = {
   info: SearchTypes | null;
@@ -22,10 +23,8 @@ type AgeListProps = {
 const AgeList = ({ person, dates }: AgeListProps) => {
   const [details, setDetails] = useState<PersonDetails | null>(null);
   useEffect(() => {
-    (async () => {
-      setDetails(await getPersonDetails(person.id));
-    })();
-  });
+    getPersonDetails(person.id).then((d) => setDetails(d));
+  }, [person, setDetails]);
   let roles = '';
   if ('roles' in person && person.roles) {
     roles = person.roles
@@ -44,20 +43,24 @@ const AgeList = ({ person, dates }: AgeListProps) => {
   if (dates.length >= 1) ages += dates[0].diff(birthday, 'years');
   if (dates.length >= 2) ages += ' - ' + dates[1].diff(birthday, 'years');
 
+  const avatarOptions: AvatarProps = {
+    shape: 'square',
+    size: 'large',
+  };
+  if (details?.profile_path) {
+    avatarOptions.src = `${IMAGE_PATH}/${details?.profile_path}`;
+  } else {
+    avatarOptions.icon = <UserOutlined />;
+  }
+
   return (
     <List.Item>
       <Skeleton avatar title={false} loading={details ? false : true} active>
         <List.Item.Meta
-          avatar={
-            <Avatar
-              src={`${IMAGE_PATH}/${details?.profile_path}`}
-              shape="square"
-              size="large"
-            />
-          }
+          avatar={<Avatar {...avatarOptions} />}
           title={
             <>
-              {title}
+              {title.replace('(NaN)', '(?)')}
               {details?.deathday ? <UserDeleteOutlined /> : null}
             </>
           }
@@ -65,7 +68,7 @@ const AgeList = ({ person, dates }: AgeListProps) => {
         />
         <div>
           AGE WHEN FILMED:
-          <br /> {ages}
+          <br /> {ages === 'NaN - NaN' ? '?' : ages}
         </div>
       </Skeleton>
     </List.Item>
@@ -78,20 +81,23 @@ const AgeTable = ({ info }: AgeProps) => {
 
   useEffect(() => {
     if (info) {
-      (async () => {
-        setDetails(await getDetails(info));
+      getDetails(info).then((d) => {
+        setDetails(d);
         setLoading(false);
-      })();
+      });
     } else {
       setLoading(false);
     }
-  }, [info, setLoading]);
+  }, [info, setLoading, setDetails]);
 
   if (details === null && !loading) return <>An issue occured...</>;
   return (
     <List
       loading={loading}
-      dataSource={details?.cast.slice(0, 10)}
+      dataSource={details?.cast}
+      pagination={{
+        pageSize: 10,
+      }}
       renderItem={(person) => (
         <AgeList person={person} dates={details?.dates || []} />
       )}
